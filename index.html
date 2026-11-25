@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Mathematics and electrical engineering notes, papers, and interactive demonstrations by Hein Hundal.">
+  <title>Math &amp; Engineering — Hein Hundal</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #182235;
+      --muted: #5c687c;
+      --line: #dce3ed;
+      --paper: #ffffff;
+      --wash: #f3f6fb;
+      --accent: #2458a6;
+      --accent-dark: #173f7b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--wash);
+      color: var(--ink);
+      font: 16px/1.55 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    header {
+      padding: 3.25rem 1.25rem 2.75rem;
+      background: linear-gradient(135deg, #142b4d, #2458a6);
+      color: white;
+    }
+    .wrap { width: min(900px, 100% - 2rem); margin: 0 auto; }
+    h1 { margin: 0; font-size: clamp(2rem, 5vw, 3rem); letter-spacing: -0.035em; }
+    header p { max-width: 650px; margin: .8rem 0 0; color: #e2ebf8; font-size: 1.08rem; }
+    main { padding: 2rem 0 3.5rem; }
+    section {
+      margin: 0 0 1.5rem;
+      padding: 1.4rem 1.5rem 1.1rem;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: 0 5px 18px rgb(21 42 74 / 5%);
+    }
+    h2 { margin: 0 0 .25rem; font-size: 1.35rem; letter-spacing: -.015em; }
+    .section-note { margin: 0 0 1rem; color: var(--muted); }
+    ul { list-style: none; margin: 0; padding: 0; }
+    li { border-top: 1px solid var(--line); }
+    li:first-child { border-top: 0; }
+    a.file {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: .72rem .15rem;
+      color: var(--accent);
+      text-decoration: none;
+      overflow-wrap: anywhere;
+    }
+    a.file:hover { color: var(--accent-dark); text-decoration: underline; }
+    .kind { flex: 0 0 auto; color: var(--muted); font-size: .83rem; }
+    footer { padding: 0 1rem 2rem; color: var(--muted); text-align: center; font-size: .9rem; }
+    @media (max-width: 520px) {
+      section { padding: 1.15rem 1rem .85rem; }
+      a.file { display: block; }
+      .kind { display: block; margin-top: .1rem; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>Math &amp; Engineering</h1>
+      <p>Notes, papers, and interactive demonstrations by Hein Hundal.</p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section aria-labelledby="interactive-heading">
+      <h2 id="interactive-heading">Interactive demonstrations</h2>
+      <p class="section-note">Open these HTML pages in your browser.</p>
+      <ul>
+        <li><a class="file" href="Convolution%20Lab.html"><span>Convolution Lab</span><span class="kind">Interactive page</span></a></li>
+        <li><a class="file" href="CotnerCube.html"><span>CotnerCube</span><span class="kind">Interactive page</span></a></li>
+        <li><a class="file" href="FourierConvolutionLab.html"><span>FourierConvolutionLab</span><span class="kind">Interactive page</span></a></li>
+      </ul>
+    </section>
+
+    <section aria-labelledby="papers-heading">
+      <h2 id="papers-heading">Papers and notes</h2>
+      <p class="section-note">PDF documents open in your browser or download, depending on your settings.</p>
+      <ul>
+        <li><a class="file" href="%281%2Blog%28x%29%3An%29%5En.pdf"><span>(1+log(x):n)^n.pdf</span><span class="kind">PDF</span></a></li>
+        <li><a class="file" href="ChirpAuto.pdf"><span>ChirpAuto.pdf</span><span class="kind">PDF</span></a></li>
+        <li><a class="file" href="Cotners_Cube2.pdf"><span>Cotners_Cube2.pdf</span><span class="kind">PDF</span></a></li>
+        <li><a class="file" href="EEFourier.pdf"><span>EEFourier.pdf</span><span class="kind">PDF</span></a></li>
+        <li><a class="file" href="IntegerMultiplicationConvolution.pdf"><span>IntegerMultiplicationConvolution.pdf</span><span class="kind">PDF</span></a></li>
+        <li><a class="file" href="IntroToChirpAndStretch.pdf"><span>IntroToChirpAndStretch.pdf</span><span class="kind">PDF</span></a></li>
+        <li><a class="file" href="LawOfCosines.pdf"><span>LawOfCosines.pdf</span><span class="kind">PDF</span></a></li>
+        <li><a class="file" href="MathReviewElectricalEngineering.pdf"><span>MathReviewElectricalEngineering.pdf</span><span class="kind">PDF</span></a></li>
+        <li><a class="file" href="NotesOnEETeachingFourierSchwarz.pdf"><span>NotesOnEETeachingFourierSchwarz.pdf</span><span class="kind">PDF</span></a></li>
+        <li><a class="file" href="SumSinc.pdf"><span>SumSinc.pdf</span><span class="kind">PDF</span></a></li>
+        <li><a class="file" href="Taylor2.pdf"><span>Taylor2.pdf</span><span class="kind">PDF</span></a></li>
+      </ul>
+    </section>
+
+    <section aria-labelledby="repo-heading">
+      <h2 id="repo-heading">Repository information</h2>
+      <ul>
+        <li><a class="file" href="https://github.com/hundalhh/EEMath/blob/main/README.md"><span>README.md</span><span class="kind">GitHub</span></a></li>
+        <li><a class="file" href="https://github.com/hundalhh/EEMath/blob/main/LICENSE"><span>LICENSE</span><span class="kind">GitHub</span></a></li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>Hosted with GitHub Pages</footer>
+</body>
+</html>
