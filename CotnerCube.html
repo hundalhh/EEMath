@@ -1,0 +1,779 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Explore the eight vertices of Cotner’s Fourier cube with rectangular, triangular, sinc, and Gaussian signals.">
+<title>Cotner’s Fourier Cube</title>
+<style>
+  :root {
+    color-scheme: light; --ink: #142238; --muted: #4e6075; --line: #d8e1eb;
+    --page: #f4f7fb; --surface: #fff; --time: #1a5b96; --freq: #a64a27;
+    --time-wash: #eaf3fc; --freq-wash: #fdf0e8; --transform: #57677d;
+    font: 100%/1.54 ui-sans-serif, system-ui, -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); }
+  main { max-width: 81rem; padding: 2rem clamp(1rem, 3.1vw, 2.6rem) 3rem; margin: auto; }
+  h1, h2, h3, p { margin: 0; }
+  h1 { font-size: clamp(2.05rem, 5vw, 3.85rem); font-weight: 690; letter-spacing: -.06em; line-height: 1.05; }
+  h2 { font-size: 1.34rem; letter-spacing: -.025em; line-height: 1.24; }
+  .intro { margin-top: .6rem; color: var(--muted); }
+  .math { font-family: "STIX Two Math", "Cambria Math", Georgia, serif; font-size: 1.1em; }
+  .tabs { display: flex; gap: .5rem; margin: 1.35rem 0 .9rem; border-bottom: 1px solid var(--line); }
+  button, input, select { font: inherit; color: inherit; }
+  button, select { cursor: pointer; }
+  .tabs button {
+    border: 0; border-bottom: 3px solid transparent; background: transparent;
+    padding: .56rem .86rem .62rem; font-weight: 600; color: var(--muted);
+  }
+  .tabs button[aria-selected="true"] { color: var(--time); border-color: var(--time); }
+  :focus-visible { outline: 2px solid #276cb0; outline-offset: 3px; }
+  .surface { background: var(--surface); border: 1px solid var(--line); border-radius: .8rem; }
+  .controls { padding: .85rem 1rem; margin-bottom: 1rem; }
+  .parameters { display: flex; flex-wrap: wrap; align-items: end; gap: .65rem 1.15rem; }
+  .field { display: grid; gap: .2rem; min-width: 8.5rem; }
+  label { font-size: .88rem; font-weight: 630; }
+  input, select {
+    min-height: 2.35rem; padding: .32rem .58rem; border: 1px solid #b8c8da; border-radius: .36rem;
+    background-color: white;
+  }
+  input { width: 8.5rem; font-variant-numeric: tabular-nums; }
+  input[aria-invalid="true"] { border-color: #b34027; background: #fff8f6; }
+  select {
+    appearance: none; padding-right: 1.9rem;
+    background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23536478' stroke-width='1.6' d='m4 6 4 4 4-4'/%3E%3C/svg%3E") no-repeat right .45rem center / 1rem;
+  }
+  .parameter-status { align-self: end; padding: .42rem 0; color: var(--muted); font-size: .88rem; }
+  .validation { margin-top: .45rem; color: #a13321; font-size: .9rem; }
+  .cube-card { overflow: hidden; }
+  .cube-top {
+    padding: .85rem 1rem; display: flex; flex-wrap: wrap; align-items: center;
+    justify-content: space-between; gap: .5rem 1rem; border-bottom: 1px solid var(--line);
+  }
+  .legend { display: flex; gap: .75rem; flex-wrap: wrap; color: var(--muted); font-size: .81rem; }
+  .legend span { display: inline-flex; gap: .34rem; align-items: center; }
+  .swatch { width: 1rem; height: 2px; background: var(--transform); }
+  .swatch.time { background: var(--time); }
+  .swatch.freq { background: var(--freq); }
+  .cube-scroll { overflow: auto; overscroll-behavior-inline: contain; }
+  .pan-hint { display: none; padding: .45rem 1rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .82rem; }
+  #cube {
+    display: block; width: 100%; min-width: 52rem; height: auto;
+    background: radial-gradient(ellipse at 60% 20%, #f0f5fb, #fff 78%);
+  }
+  .axis { stroke: #9fb0c3; stroke-width: 1; }
+  .gridline { stroke: #e0e8f1; stroke-width: 1; }
+  .plot-tick { fill: #4e6075; font: 11px ui-sans-serif, system-ui, sans-serif; }
+  .edge { fill: none; stroke-width: 1.65; }
+  .edge-text { font: 650 13px ui-sans-serif, system-ui, sans-serif; paint-order: stroke; stroke: #f8fbfe; stroke-width: 5px; stroke-linejoin: round; }
+  .edge-detail { font: 12px ui-sans-serif, system-ui, sans-serif; }
+  .node-name { font: italic 600 20px Georgia, serif; }
+  .mini-tick { font-size: 10px; }
+  .compare { margin-top: 1.25rem; }
+  .compare-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: .9rem; margin-top: .7rem; }
+  .plot-card { padding: .7rem .8rem .35rem; min-width: 0; }
+  .plot-controls { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; padding-bottom: .3rem; }
+  .plot-controls select { flex: 1; min-width: 0; font-size: .92rem; }
+  .zoom-buttons { display: inline-flex; gap: .25rem; }
+  .zoom-buttons button {
+    display: grid; place-items: center; padding: 0; width: 2rem; height: 2.35rem;
+    border: 1px solid #b8c8da; border-radius: .36rem; background: white; font-weight: 650;
+  }
+  .zoom-buttons button:hover:not(:disabled) { background: #eaf3fc; }
+  .zoom-buttons button:disabled { opacity: .4; cursor: default; }
+  .mini-zoom .zoom-buttons button { width: 24px; height: 23px; border-radius: 4px; font-size: 15px; }
+  .mini-zoom .zoom-buttons button:focus-visible { outline-offset: -2px; }
+  .plot-card svg { display: block; width: 100%; height: auto; }
+  .comparison-relation { margin-top: .7rem; padding: .65rem .85rem; }
+  .comparison-relation h3 { font-size: .95rem; font-weight: 650; }
+  .comparison-relation .equation-math { padding: .2rem 0; }
+  .comparison-relation .hint { margin-bottom: 0; }
+  .reference-top, .paper { padding: clamp(.85rem, 2vw, 1.4rem); }
+  .hint { color: var(--muted); font-size: .91rem; margin: .42rem 0 .7rem; }
+  .table-scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; min-width: 39rem; font-variant-numeric: tabular-nums; }
+  th, td { padding: .55rem .65rem; border-bottom: 1px solid var(--line); }
+  thead th { background: #eef3fa; text-align: left; font-size: .86rem; }
+  tbody th { text-align: left; font-weight: 650; }
+  tbody td:nth-child(n+3), thead th:nth-child(n+3) { text-align: right; }
+  tbody tr:nth-child(4n+1), tbody tr:nth-child(4n+2) { background: #f8fafd; }
+  .paper { margin-top: 1rem; }
+  .paper p { margin: .6em 0; max-width: 85ch; }
+  .paper h3 { margin-top: 1.22rem; font-size: 1.23rem; line-height: 1.28; scroll-margin-top: 1rem; }
+  .paper-equation {
+    display: grid; grid-template-columns: minmax(0, 1fr) 2.6rem; align-items: center;
+    border-bottom: 1px solid var(--line); padding: .4rem 0;
+  }
+  .equation-math { overflow-x: auto; padding: .1rem .25rem; }
+  .paper math[display="block"] { font-size: 1.08rem; }
+  .equation-number { text-align: right; font-size: .85rem; color: var(--muted); }
+  [hidden] { display: none !important; }
+  @media (max-width: 56rem) { .pan-hint { display: block; } }
+  @media (max-width: 42rem) {
+    main { padding-top: 1.3rem; }
+    .compare-grid { grid-template-columns: 1fr; }
+    .parameters { gap: .5rem .7rem; }
+    .field { min-width: 0; flex: 1 1 6rem; }
+    .signal-field { flex-basis: 100%; }
+    input { width: 100%; }
+    .parameter-status { flex-basis: 100%; padding-bottom: 0; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Cotner’s Fourier Cube</h1>
+    <p class="intro math" id="signal-formula">f(t) = u(t + W/2) − u(t − W/2), with u(0) = ½</p>
+  </header>
+  <nav class="tabs" role="tablist" aria-label="Cube and reference">
+    <button type="button" id="cube-tab" role="tab" aria-selected="true" aria-controls="cube-panel">Interactive cube</button>
+    <button type="button" id="reference-tab" role="tab" aria-selected="false" aria-controls="reference-panel" tabindex="-1">Formulas &amp; energy</button>
+  </nav>
+  <section class="surface controls" aria-label="Signal parameters">
+    <form class="parameters" id="parameters" novalidate>
+      <div class="field signal-field">
+        <label for="signal-type">Signal <span class="math">f(t)</span></label>
+        <select id="signal-type">
+          <option value="rectangle">Rectangular pulse</option>
+          <option value="triangle">Triangle</option>
+          <option value="sinc">Sinc</option>
+          <option value="gaussian">Gaussian</option>
+        </select>
+      </div>
+      <div class="field"><label for="period">Period <span class="math">T</span></label><input id="period" type="number" step="any" min="0" value="15" aria-describedby="parameter-error"></div>
+      <div class="field"><label for="delta">Sample interval <span class="math">Δ</span></label><input id="delta" type="number" step="any" min="0" value="1" aria-describedby="parameter-error"></div>
+      <div class="field"><label for="rPulseWidth">Width / scale <span class="math">W</span></label><input id="rPulseWidth" type="number" step="any" min="0" value="5" aria-describedby="parameter-error"></div>
+      <output class="parameter-status" id="parameter-status" for="period delta rPulseWidth" aria-live="polite"></output>
+    </form>
+    <p id="parameter-error" class="validation" role="status" hidden></p>
+  </section>
+  <section id="cube-panel" role="tabpanel" aria-labelledby="cube-tab">
+    <section class="surface cube-card" aria-labelledby="cube-heading">
+      <div class="cube-top">
+        <h2 id="cube-heading">The commutative cube</h2>
+        <div class="legend" aria-label="Diagram legend">
+          <span><i class="swatch time"></i>Time domain</span>
+          <span><i class="swatch freq"></i>Frequency domain</span>
+          <span><i class="swatch"></i>Invertible transforms</span>
+        </div>
+      </div>
+      <div class="cube-scroll" tabindex="0" role="region" aria-label="Scrollable cube diagram">
+        <svg id="cube" viewBox="0 0 1100 621" role="group" aria-labelledby="cube-svg-title" aria-describedby="cube-svg-desc"></svg>
+      </div>
+      <p class="pan-hint">Scroll sideways to see the whole cube.</p>
+    </section>
+    <section class="compare" aria-labelledby="compare-heading">
+      <h2 id="compare-heading">Compare plots</h2>
+      <div class="compare-grid">
+        <section class="surface plot-card">
+          <div class="plot-controls"><label for="plot-left">Left plot</label><select id="plot-left"></select><div id="zoom-left"></div></div>
+          <svg id="chart-left" viewBox="0 0 520 257" role="img"></svg>
+        </section>
+        <section class="surface plot-card">
+          <div class="plot-controls"><label for="plot-right">Right plot</label><select id="plot-right"></select><div id="zoom-right"></div></div>
+          <svg id="chart-right" viewBox="0 0 520 257" role="img"></svg>
+        </section>
+      </div>
+      <section id="comparison-relation" class="surface comparison-relation" aria-labelledby="comparison-relation-title" aria-live="polite" hidden>
+        <h3 id="comparison-relation-title"></h3>
+        <div id="comparison-relation-math" class="equation-math"></div>
+        <p id="comparison-relation-note" class="hint" hidden></p>
+      </section>
+    </section>
+  </section>
+  <section id="reference-panel" role="tabpanel" aria-labelledby="reference-tab" hidden>
+    <section class="surface reference-top" aria-labelledby="energy-heading">
+      <h2 id="energy-heading">Energy norms</h2>
+      <p class="hint">The norm is the square root of the energy. The last column applies the paper’s weights so each time-domain row matches its transform.</p>
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Energy table">
+        <table>
+          <thead><tr><th scope="col">Vertex</th><th scope="col">Domain of norm</th><th scope="col">Norm ‖·‖₂</th><th scope="col">Energy ‖·‖₂²</th><th scope="col">Weighted energy</th></tr></thead>
+          <tbody id="energy-rows"></tbody>
+        </table>
+      </div>
+    </section>
+    <article class="surface paper" aria-labelledby="formulas-heading">
+      <h2 id="formulas-heading">Formulas from the paper</h2>
+      <p class="hint">Equation numbers follow <cite>Fourier Transforms and Cotner’s Cube</cite> (<code>Cotners_Cube2.tex</code>).</p>
+      <!-- PAPER_REFERENCE_START -->
+      <h3>Energy identities</h3>
+      <div class="paper-equation" id="eq:parseval-ctft" data-equation="21"><div class="equation-math"><math display="block"><mtable><mtr><mtd columnalign="right" style="text-align: right; padding-right: 0"><munder><munder><mrow><msub><mo>∫</mo><mi mathvariant="double-struck">ℝ</mi></msub><mo stretchy="false" form="prefix">|</mo><mi>f</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo><msup><mo stretchy="false" form="prefix">|</mo><mn>2</mn></msup><mspace width="0.167em"></mspace><mi mathvariant="normal">d</mi><mi>t</mi></mrow><mo accent="true">⏟</mo></munder><mtext mathvariant="normal">time: CTFT</mtext></munder></mtd><mtd columnalign="left" style="text-align: left; padding-left: 0"><mo>=</mo><munder><munder><mrow><mfrac><mn>1</mn><mrow><mn>2</mn><mi>π</mi></mrow></mfrac><msub><mo>∫</mo><mi mathvariant="double-struck">ℝ</mi></msub><mo stretchy="false" form="prefix">|</mo><mi>F</mi><mo stretchy="false" form="prefix">(</mo><mi>ω</mi><mo stretchy="false" form="postfix">)</mo><msup><mo stretchy="false" form="prefix">|</mo><mn>2</mn></msup><mspace width="0.167em"></mspace><mi mathvariant="normal">d</mi><mi>ω</mi></mrow><mo accent="true">⏟</mo></munder><mtext mathvariant="normal">frequency: CTFT</mtext></munder><mo>,</mo></mtd></mtr></mtable></math></div><span class="equation-number">(21)</span></div>
+      <div class="paper-equation" id="eq:parseval-fs" data-equation="22"><div class="equation-math"><math display="block"><mtable><mtr><mtd columnalign="right" style="text-align: right; padding-right: 0"><munder><munder><mrow><mfrac><mn>1</mn><mi>T</mi></mfrac><msubsup><mo>∫</mo><mn>0</mn><mi>T</mi></msubsup><mo stretchy="false" form="prefix">|</mo><mi>g</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo><msup><mo stretchy="false" form="prefix">|</mo><mn>2</mn></msup><mspace width="0.167em"></mspace><mi mathvariant="normal">d</mi><mi>t</mi></mrow><mo accent="true">⏟</mo></munder><mtext mathvariant="normal">time: FS</mtext></munder></mtd><mtd columnalign="left" style="text-align: left; padding-left: 0"><mo>=</mo><munder><munder><mrow><munder><mo>∑</mo><mrow><mi>k</mi><mo>∈</mo><mi mathvariant="double-struck">ℤ</mi></mrow></munder><mo stretchy="false" form="prefix">|</mo><mi>G</mi><mo stretchy="false" form="prefix">[</mo><mi>k</mi><mo stretchy="false" form="postfix">]</mo><msup><mo stretchy="false" form="prefix">|</mo><mn>2</mn></msup></mrow><mo accent="true">⏟</mo></munder><mtext mathvariant="normal">frequency: FS</mtext></munder><mo>,</mo></mtd></mtr></mtable></math></div><span class="equation-number">(22)</span></div>
+      <div class="paper-equation" id="eq:parseval-dtft" data-equation="23"><div class="equation-math"><math display="block"><mtable><mtr><mtd columnalign="right" style="text-align: right; padding-right: 0"><munder><munder><mrow><munder><mo>∑</mo><mrow><mi>n</mi><mo>∈</mo><mi mathvariant="double-struck">ℤ</mi></mrow></munder><mo stretchy="false" form="prefix">|</mo><mi>a</mi><mo stretchy="false" form="prefix">[</mo><mi>n</mi><mo stretchy="false" form="postfix">]</mo><msup><mo stretchy="false" form="prefix">|</mo><mn>2</mn></msup></mrow><mo accent="true">⏟</mo></munder><mtext mathvariant="normal">time: DTFT</mtext></munder></mtd><mtd columnalign="left" style="text-align: left; padding-left: 0"><mo>=</mo><munder><munder><mrow><mfrac><mn>1</mn><mrow><mn>2</mn><mi>π</mi></mrow></mfrac><msubsup><mo>∫</mo><mrow><mi>−</mi><mi>π</mi></mrow><mi>π</mi></msubsup><mo stretchy="false" form="prefix">|</mo><mi>A</mi><mo stretchy="false" form="prefix">(</mo><mi mathvariant="normal">Ω</mi><mo stretchy="false" form="postfix">)</mo><msup><mo stretchy="false" form="prefix">|</mo><mn>2</mn></msup><mspace width="0.167em"></mspace><mi mathvariant="normal">d</mi><mi mathvariant="normal">Ω</mi></mrow><mo accent="true">⏟</mo></munder><mtext mathvariant="normal">frequency: DTFT</mtext></munder><mo>,</mo></mtd></mtr></mtable></math></div><span class="equation-number">(23)</span></div>
+      <div class="paper-equation" id="eq:parseval-dft" data-equation="24"><div class="equation-math"><math display="block"><mtable><mtr><mtd columnalign="right" style="text-align: right; padding-right: 0"><munder><munder><mrow><munderover><mo>∑</mo><mrow><mi>r</mi><mo>=</mo><mn>0</mn></mrow><mrow><mi>N</mi><mo>−</mo><mn>1</mn></mrow></munderover><mo stretchy="false" form="prefix">|</mo><mi>b</mi><mo stretchy="false" form="prefix">[</mo><mi>r</mi><mo stretchy="false" form="postfix">]</mo><msup><mo stretchy="false" form="prefix">|</mo><mn>2</mn></msup></mrow><mo accent="true">⏟</mo></munder><mtext mathvariant="normal">time: DFT</mtext></munder></mtd><mtd columnalign="left" style="text-align: left; padding-left: 0"><mo>=</mo><munder><munder><mrow><mfrac><mn>1</mn><mi>N</mi></mfrac><munderover><mo>∑</mo><mrow><mi>k</mi><mo>=</mo><mn>0</mn></mrow><mrow><mi>N</mi><mo>−</mo><mn>1</mn></mrow></munderover><mo stretchy="false" form="prefix">|</mo><mi>B</mi><mo stretchy="false" form="prefix">[</mo><mi>k</mi><mo stretchy="false" form="postfix">]</mo><msup><mo stretchy="false" form="prefix">|</mo><mn>2</mn></msup></mrow><mo accent="true">⏟</mo></munder><mtext mathvariant="normal">frequency: DFT</mtext></munder><mi>.</mi></mtd></mtr></mtable></math></div><span class="equation-number">(24)</span></div>
+      <h3>Cube and transform formulas</h3>
+      <div class="paper-equation" id="eq:delta" data-equation="1"><div class="equation-math"><math display="block"><semantics><mrow><mi>T</mi><mo>=</mo><mi>N</mi><mi mathvariant="normal">Δ</mi><mi>.</mi></mrow></semantics></math></div><span class="equation-number">(1)</span></div>
+      <div class="paper-equation" id="eq:a-def" data-equation="6"><div class="equation-math"><math display="block"><semantics><mrow><mi>a</mi><mo stretchy="false" form="prefix">[</mo><mi>n</mi><mo stretchy="false" form="postfix">]</mo><mo>=</mo><mi>f</mi><mo stretchy="false" form="prefix">(</mo><mi>n</mi><mi mathvariant="normal">Δ</mi><mo stretchy="false" form="postfix">)</mo><mo>,</mo><mspace width="2.0em"></mspace><mi>n</mi><mo>∈</mo><mi mathvariant="double-struck">ℤ</mi><mi>.</mi></mrow></semantics></math></div><span class="equation-number">(6)</span></div>
+      <div class="paper-equation" id="eq:p-def" data-equation="7"><div class="equation-math"><math display="block"><mtable><mtr><mtd columnalign="right" style="text-align: right; padding-right: 0"><mi>g</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mtd><mtd columnalign="left" style="text-align: left; padding-left: 0"><mo>=</mo><munder><mo>∑</mo><mrow><mi>m</mi><mo>∈</mo><mi mathvariant="double-struck">ℤ</mi></mrow></munder><mi>f</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo>+</mo><mi>m</mi><mi>T</mi><mo stretchy="false" form="postfix">)</mo><mo>,</mo><mspace width="2.0em"></mspace><mi>t</mi><mo>∈</mo><mo stretchy="false" form="prefix">[</mo><mn>0</mn><mo>,</mo><mi>T</mi><mo stretchy="false" form="postfix">]</mo><mo>,</mo></mtd></mtr></mtable></math></div><span class="equation-number">(7)</span></div>
+      <div class="paper-equation" id="eq:b-def" data-equation="8"><div class="equation-math"><math display="block"><mtable><mtr><mtd columnalign="right" style="text-align: right; padding-right: 0"><mi>b</mi><mo stretchy="false" form="prefix">[</mo><mi>r</mi><mo stretchy="false" form="postfix">]</mo></mtd><mtd columnalign="left" style="text-align: left; padding-left: 0"><mo>=</mo><munder><mo>∑</mo><mrow><mi>m</mi><mo>∈</mo><mi mathvariant="double-struck">ℤ</mi></mrow></munder><mi>a</mi><mo stretchy="false" form="prefix">[</mo><mi>r</mi><mo>+</mo><mi>m</mi><mi>N</mi><mo stretchy="false" form="postfix">]</mo><mo>,</mo><mspace width="2.0em"></mspace><mi>r</mi><mo>∈</mo><msub><mi mathvariant="double-struck">ℤ</mi><mi>N</mi></msub><mi>.</mi></mtd></mtr></mtable></math></div><span class="equation-number">(8)</span></div>
+      <div class="paper-equation" id="eq:time-commute" data-equation="10"><div class="equation-math"><math display="block"><semantics><menclose notation="box"><mrow><mspace width="1.0em"></mspace><mi>g</mi><mo stretchy="false" form="prefix">(</mo><mi>r</mi><mi mathvariant="normal">Δ</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><munder><mo>∑</mo><mrow><mi>m</mi><mo>∈</mo><mi mathvariant="double-struck">ℤ</mi></mrow></munder><mi>f</mi><mo stretchy="false" form="prefix">(</mo><mi>r</mi><mi mathvariant="normal">Δ</mi><mo>+</mo><mi>m</mi><mi>T</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><munder><mo>∑</mo><mrow><mi>m</mi><mo>∈</mo><mi mathvariant="double-struck">ℤ</mi></mrow></munder><mi>a</mi><mo stretchy="false" form="prefix">[</mo><mi>r</mi><mo>+</mo><mi>m</mi><mi>N</mi><mo stretchy="false" form="postfix">]</mo><mo>=</mo><mi>b</mi><mo stretchy="false" form="prefix">[</mo><mi>r</mi><mo stretchy="false" form="postfix">]</mo><mi>.</mi><mspace width="1.0em"></mspace></mrow></menclose></semantics></math></div><span class="equation-number">(10)</span></div>
+      <div class="paper-equation" id="eq:ctft" data-equation="11"><div class="equation-math"><math display="block"><semantics><mrow><mi>F</mi><mo stretchy="false" form="prefix">(</mo><mi>ω</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><msub><mo>∫</mo><mi mathvariant="double-struck">ℝ</mi></msub><mi>f</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo><msup><mi>e</mi><mrow><mi>−</mi><mi>j</mi><mi>ω</mi><mi>t</mi></mrow></msup><mspace width="0.167em"></mspace><mi mathvariant="normal">d</mi><mi>t</mi><mo>,</mo><mspace width="2.0em"></mspace><mi>f</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mfrac><mn>1</mn><mrow><mn>2</mn><mi>π</mi></mrow></mfrac><msub><mo>∫</mo><mi mathvariant="double-struck">ℝ</mi></msub><mi>F</mi><mo stretchy="false" form="prefix">(</mo><mi>ω</mi><mo stretchy="false" form="postfix">)</mo><msup><mi>e</mi><mrow><mi>j</mi><mi>ω</mi><mi>t</mi></mrow></msup><mspace width="0.167em"></mspace><mi mathvariant="normal">d</mi><mi>ω</mi><mi>.</mi></mrow></semantics></math></div><span class="equation-number">(11)</span></div>
+      <div class="paper-equation" id="eq:fs" data-equation="12"><div class="equation-math"><math display="block"><semantics><mrow><mi>G</mi><mo stretchy="false" form="prefix">[</mo><mi>k</mi><mo stretchy="false" form="postfix">]</mo><mo>=</mo><mfrac><mn>1</mn><mi>T</mi></mfrac><msubsup><mo>∫</mo><mn>0</mn><mi>T</mi></msubsup><mi>g</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo><msup><mi>e</mi><mrow><mi>−</mi><mi>j</mi><mi>k</mi><msub><mi>ω</mi><mn>0</mn></msub><mi>t</mi></mrow></msup><mspace width="0.167em"></mspace><mi mathvariant="normal">d</mi><mi>t</mi><mo>,</mo><mspace width="2.0em"></mspace><mi>g</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><munder><mo>∑</mo><mrow><mi>k</mi><mo>∈</mo><mi mathvariant="double-struck">ℤ</mi></mrow></munder><mi>G</mi><mo stretchy="false" form="prefix">[</mo><mi>k</mi><mo stretchy="false" form="postfix">]</mo><msup><mi>e</mi><mrow><mi>j</mi><mi>k</mi><msub><mi>ω</mi><mn>0</mn></msub><mi>t</mi></mrow></msup><mi>.</mi></mrow></semantics></math></div><span class="equation-number">(12)</span></div>
+      <div class="paper-equation" id="eq:dtft" data-equation="13"><div class="equation-math"><math display="block"><semantics><mrow><mi>A</mi><mo stretchy="false" form="prefix">(</mo><mi mathvariant="normal">Ω</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><munder><mo>∑</mo><mrow><mi>n</mi><mo>∈</mo><mi mathvariant="double-struck">ℤ</mi></mrow></munder><mi>a</mi><mo stretchy="false" form="prefix">[</mo><mi>n</mi><mo stretchy="false" form="postfix">]</mo><msup><mi>e</mi><mrow><mi>−</mi><mi>j</mi><mi mathvariant="normal">Ω</mi><mi>n</mi></mrow></msup><mo>,</mo><mspace width="2.0em"></mspace><mi>a</mi><mo stretchy="false" form="prefix">[</mo><mi>n</mi><mo stretchy="false" form="postfix">]</mo><mo>=</mo><mfrac><mn>1</mn><mrow><mn>2</mn><mi>π</mi></mrow></mfrac><msubsup><mo>∫</mo><msub><mi mathvariant="normal">Ω</mi><mn>1</mn></msub><mrow><msub><mi mathvariant="normal">Ω</mi><mn>1</mn></msub><mo>+</mo><mn>2</mn><mi>π</mi></mrow></msubsup><mi>A</mi><mo stretchy="false" form="prefix">(</mo><mi mathvariant="normal">Ω</mi><mo stretchy="false" form="postfix">)</mo><msup><mi>e</mi><mrow><mi>j</mi><mi mathvariant="normal">Ω</mi><mi>n</mi></mrow></msup><mspace width="0.167em"></mspace><mi mathvariant="normal">d</mi><mi mathvariant="normal">Ω</mi><mi>.</mi></mrow></semantics></math></div><span class="equation-number">(13)</span></div>
+      <div class="paper-equation" id="eq:dft" data-equation="14"><div class="equation-math"><math display="block"><semantics><mrow><mi>B</mi><mo stretchy="false" form="prefix">[</mo><mi>k</mi><mo stretchy="false" form="postfix">]</mo><mo>=</mo><munderover><mo>∑</mo><mrow><mi>r</mi><mo>=</mo><mn>0</mn></mrow><mrow><mi>N</mi><mo>−</mo><mn>1</mn></mrow></munderover><mi>b</mi><mo stretchy="false" form="prefix">[</mo><mi>r</mi><mo stretchy="false" form="postfix">]</mo><msup><mi>e</mi><mrow><mi>−</mi><mi>j</mi><mi>k</mi><msub><mi mathvariant="normal">Ω</mi><mn>0</mn></msub><mi>r</mi></mrow></msup><mo>,</mo><mspace width="2.0em"></mspace><mi>b</mi><mo stretchy="false" form="prefix">[</mo><mi>r</mi><mo stretchy="false" form="postfix">]</mo><mo>=</mo><mfrac><mn>1</mn><mi>N</mi></mfrac><munderover><mo>∑</mo><mrow><mi>k</mi><mo>=</mo><mn>0</mn></mrow><mrow><mi>N</mi><mo>−</mo><mn>1</mn></mrow></munderover><mi>B</mi><mo stretchy="false" form="prefix">[</mo><mi>k</mi><mo stretchy="false" form="postfix">]</mo><msup><mi>e</mi><mrow><mi>j</mi><mi>k</mi><msub><mi mathvariant="normal">Ω</mi><mn>0</mn></msub><mi>r</mi></mrow></msup><mi>.</mi></mrow></semantics></math></div><span class="equation-number">(14)</span></div>
+      <div class="paper-equation" id="eq:frequency-top" data-equation="15"><div class="equation-math"><math display="block"><mtable><mtr><mtd columnalign="right" style="text-align: right; padding-right: 0"><menclose notation="box"><mrow><mi>G</mi><mo stretchy="false" form="prefix">[</mo><mi>k</mi><mo stretchy="false" form="postfix">]</mo><mo>=</mo><mfrac><mn>1</mn><mi>T</mi></mfrac><mi>F</mi><mo stretchy="false" form="prefix">(</mo><mi>k</mi><msub><mi>ω</mi><mn>0</mn></msub><mo stretchy="false" form="postfix">)</mo></mrow></menclose><mo>,</mo></mtd><mtd columnalign="left" style="text-align: left; padding-left: 0"><mspace width="2.0em"></mspace><mi>k</mi><mo>∈</mo><mi mathvariant="double-struck">ℤ</mi><mo>,</mo></mtd></mtr></mtable></math></div><span class="equation-number">(15)</span></div>
+      <div class="paper-equation" id="eq:frequency-left" data-equation="16"><div class="equation-math"><math display="block"><mtable><mtr><mtd columnalign="right" style="text-align: right; padding-right: 0"><menclose notation="box"><mrow><mi>A</mi><mo stretchy="false" form="prefix">(</mo><mi mathvariant="normal">Ω</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mfrac><mn>1</mn><mi mathvariant="normal">Δ</mi></mfrac><munder><mo>∑</mo><mrow><mi>m</mi><mo>∈</mo><mi mathvariant="double-struck">ℤ</mi></mrow></munder><mi>F</mi><mspace width="-0.167em"></mspace><mrow><mo stretchy="true" form="prefix">(</mo><mfrac><mrow><mi mathvariant="normal">Ω</mi><mo>+</mo><mn>2</mn><mi>π</mi><mi>m</mi></mrow><mi mathvariant="normal">Δ</mi></mfrac><mo stretchy="true" form="postfix">)</mo></mrow></mrow></menclose><mo>,</mo></mtd><mtd columnalign="left" style="text-align: left; padding-left: 0"></mtd></mtr></mtable></math></div><span class="equation-number">(16)</span></div>
+      <div class="paper-equation" id="eq:frequency-bottom" data-equation="17"><div class="equation-math"><math display="block"><mtable><mtr><mtd columnalign="right" style="text-align: right; padding-right: 0"><menclose notation="box"><mrow><mi>B</mi><mo stretchy="false" form="prefix">[</mo><mi>k</mi><mo stretchy="false" form="postfix">]</mo><mo>=</mo><mi>A</mi><mo stretchy="false" form="prefix">(</mo><mi>k</mi><msub><mi mathvariant="normal">Ω</mi><mn>0</mn></msub><mo stretchy="false" form="postfix">)</mo></mrow></menclose><mo>,</mo></mtd><mtd columnalign="left" style="text-align: left; padding-left: 0"><mspace width="2.0em"></mspace><mi>k</mi><mo>∈</mo><msub><mi mathvariant="double-struck">ℤ</mi><mi>N</mi></msub><mo>,</mo></mtd></mtr></mtable></math></div><span class="equation-number">(17)</span></div>
+      <div class="paper-equation" id="eq:frequency-right" data-equation="18"><div class="equation-math"><math display="block"><mtable><mtr><mtd columnalign="right" style="text-align: right; padding-right: 0"><menclose notation="box"><mrow><mi>B</mi><mo stretchy="false" form="prefix">[</mo><mi>k</mi><mo stretchy="false" form="postfix">]</mo><mo>=</mo><mi>N</mi><munder><mo>∑</mo><mrow><mi>m</mi><mo>∈</mo><mi mathvariant="double-struck">ℤ</mi></mrow></munder><mi>G</mi><mo stretchy="false" form="prefix">[</mo><mi>k</mi><mo>+</mo><mi>m</mi><mi>N</mi><mo stretchy="false" form="postfix">]</mo></mrow></menclose><mo>,</mo></mtd><mtd columnalign="left" style="text-align: left; padding-left: 0"><mspace width="2.0em"></mspace><mi>k</mi><mo>∈</mo><msub><mi mathvariant="double-struck">ℤ</mi><mi>N</mi></msub><mi>.</mi></mtd></mtr></mtable></math></div><span class="equation-number">(18)</span></div>
+      <div class="paper-equation" id="eq:freq-commute" data-equation="20"><div class="equation-math"><math display="block"><semantics><mtable><mtr><mtd columnalign="right" style="text-align: right; padding-right: 0"><mi>B</mi><mo stretchy="false" form="prefix">[</mo><mi>k</mi><mo stretchy="false" form="postfix">]</mo></mtd><mtd columnalign="left" style="text-align: left; padding-left: 0"><mo>=</mo><mi>A</mi><mo stretchy="false" form="prefix">(</mo><mi>k</mi><msub><mi mathvariant="normal">Ω</mi><mn>0</mn></msub><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mfrac><mn>1</mn><mi mathvariant="normal">Δ</mi></mfrac><munder><mo>∑</mo><mrow><mi>m</mi><mo>∈</mo><mi mathvariant="double-struck">ℤ</mi></mrow></munder><mi>F</mi><mo minsize="120%" maxsize="120%" stretchy="true" form="prefix">(</mo><mo stretchy="false" form="prefix">(</mo><mi>k</mi><mo>+</mo><mi>m</mi><mi>N</mi><mo stretchy="false" form="postfix">)</mo><msub><mi>ω</mi><mn>0</mn></msub><mo minsize="120%" maxsize="120%" stretchy="true" form="postfix">)</mo></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right; padding-right: 0"></mtd><mtd columnalign="left" style="text-align: left; padding-left: 0"><mo>=</mo><mi>N</mi><munder><mo>∑</mo><mrow><mi>m</mi><mo>∈</mo><mi mathvariant="double-struck">ℤ</mi></mrow></munder><mfrac><mn>1</mn><mi>T</mi></mfrac><mi>F</mi><mo minsize="120%" maxsize="120%" stretchy="true" form="prefix">(</mo><mo stretchy="false" form="prefix">(</mo><mi>k</mi><mo>+</mo><mi>m</mi><mi>N</mi><mo stretchy="false" form="postfix">)</mo><msub><mi>ω</mi><mn>0</mn></msub><mo minsize="120%" maxsize="120%" stretchy="true" form="postfix">)</mo><mo>=</mo><mi>N</mi><munder><mo>∑</mo><mrow><mi>m</mi><mo>∈</mo><mi mathvariant="double-struck">ℤ</mi></mrow></munder><mi>G</mi><mo stretchy="false" form="prefix">[</mo><mi>k</mi><mo>+</mo><mi>m</mi><mi>N</mi><mo stretchy="false" form="postfix">]</mo><mi>.</mi></mtd></mtr></mtable></semantics></math></div><span class="equation-number">(20)</span></div>
+      <!-- PAPER_REFERENCE_END -->
+    </article>
+  </section>
+  <noscript><p class="validation">Enable JavaScript to calculate and plot the cube.</p></noscript>
+</main>
+<script>
+"use strict";
+const rTau = 2 * Math.PI;
+const rTimeColor = "#1a5b96";
+const rFreqColor = "#a64a27";
+const rTransformColor = "#57677d";
+const vCorners = [
+  {id: "f", label: "f(t)", kind: "Input signal", axis: "t", domain: "ℝ", time: true},
+  {id: "F", label: "F(ω)", kind: "CTFT", axis: "ω · rad/time", domain: "ℝ", time: false},
+  {id: "g", label: "g(t)", kind: "Periodized signal", axis: "t", domain: "[0, T]", time: true},
+  {id: "G", label: "G[k]", kind: "Fourier series", axis: "k", domain: "ℤ", time: false},
+  {id: "a", label: "a[n]", kind: "Samples", axis: "n", domain: "ℤ", time: true},
+  {id: "A", label: "A(Ω)", kind: "DTFT", axis: "Ω · rad/sample", domain: "[−π, π]", time: false},
+  {id: "b", label: "b[r]", kind: "Folded samples", axis: "r", domain: "0, …, N−1", time: true},
+  {id: "B", label: "B[k]", kind: "DFT", axis: "k", domain: "0, …, N−1", time: false}
+];
+const asCorner = Object.fromEntries(vCorners.map(corner => [corner.id, corner]));
+const rRangeFactor = Math.cbrt(2);
+const iRangeLimit = 15;
+const asRangeLevels = Object.fromEntries([...vCorners.map(corner => corner.id), "left", "right"].map(id => [id, 0]));
+const fMaxRangeLevel = sId => ["g", "b", "B"].includes(sId) ? 0 : iRangeLimit;
+const fElement = id => document.getElementById(id);
+const fIntRange = (iFirst, iLast) =>
+  Array.from({length: Math.max(0, iLast - iFirst + 1)}, (_, i) => iFirst + i);
+const fMod = (n, m) => (n % m + m) % m;
+const fSquares = vValues => vValues.reduce((rSum, rValue) => rSum + rValue * rValue, 0);
+const fNearInteger = rValue => {
+  const iNearest = Math.round(rValue);
+  return Math.abs(rValue - iNearest) <= 16 * Number.EPSILON * Math.max(1, Math.abs(rValue))
+    ? iNearest : rValue;
+};
+function fFormat(rValue, iDigits = 5) {
+  if (rValue === 0 || Object.is(rValue, -0)) return "0";
+  if (Math.abs(rValue) < 0.001 || Math.abs(rValue) >= 10000) {
+    return rValue.toExponential(Math.min(iDigits - 1, 3)).replace(/\.?0+e/, "e").replace("e+", "e");
+  }
+  return Number(rValue.toPrecision(iDigits)).toString().replace("-", "−");
+}
+
+const asSignalFormulas = {
+  rectangle: "f(t) = u(t + W/2) − u(t − W/2), with u(0) = ½",
+  triangle: "f(t) = max(1 − 2|t|/W, 0)",
+  sinc: "f(t) = sinc(πt/W), where sinc(x) = sin(x)/x and sinc(0) = 1",
+  gaussian: "f(t) = exp(−(t/W)²)"
+};
+
+const fSinc = x => x === 0 ? 1 : Math.sin(x) / x;
+const fSincPi = x => x === 0 ? 1 : Number.isInteger(x) ? 0 : Math.sin(Math.PI * (x % 2)) / (Math.PI * x);
+const fCentered = (x, p) => x - p * Math.round(x / p);
+const fBox = (x, h) => {
+  const rDistance = fNearInteger(Math.abs(x) / h);
+  return rDistance < 1 ? 1 : rDistance === 1 ? 0.5 : 0;
+};
+function fBoxPeriod(x, p, h) {
+  const rLo = fNearInteger((x - h) / p);
+  const rHi = fNearInteger((x + h) / p);
+  return Math.max(0, Math.ceil(rHi) - Math.floor(rLo) - 1)
+    + 0.5 * Number(Number.isInteger(rLo)) + 0.5 * Number(Number.isInteger(rHi));
+}
+function fBoxPeriodMeanSquare(rWidthOverPeriod) {
+  const rRatio = fNearInteger(rWidthOverPeriod);
+  const q = Math.floor(rRatio);
+  return q ** 2 + (2 * q + 1) * (rRatio - q);
+}
+function fBoxSeries(rRadius, rOmega) {
+  const rEdge = fNearInteger(rRadius);
+  const m = Math.ceil(rEdge) - 1;
+  const rAngle = fCentered(rOmega, rTau);
+  const rDenom = Math.sin(rAngle / 2);
+  const rFull = rDenom === 0 ? 2 * m + 1 : Math.sin((m + 0.5) * rAngle) / rDenom;
+  return rFull + (Number.isInteger(rEdge) ? Math.cos(rEdge * rAngle) : 0);
+}
+function fFejer(m, omega) {
+  const angle = fCentered(omega, rTau);
+  const rDenom = Math.sin(angle / 2);
+  return rDenom === 0 ? m : (Math.sin(m * angle / 2) / rDenom) ** 2 / m;
+}
+function fGaussPeriod(x, p, w) {
+  const rPhase = fCentered(x, p) / p;
+  const rRatio = w / p;
+  // Use the faster of the time sum and its Poisson form. Terms past eight
+  // Gaussian widths are below double-precision relevance here.
+  if (rRatio <= 0.5) {
+    const m = Math.ceil(8 * rRatio + 0.5);
+    let sum = 0;
+    for (let j = -m; j <= m; j++) sum += Math.exp(-(((rPhase + j) / rRatio) ** 2));
+    return sum;
+  }
+  const rScale = Math.PI * rRatio;
+  const m = Math.ceil(8 / rScale);
+  let sum = 1;
+  for (let k = 1; k <= m; k++) sum += 2 * Math.exp(-((rScale * k) ** 2)) * Math.cos(rTau * k * rPhase);
+  return Math.sqrt(Math.PI) * rRatio * sum;
+}
+
+function fTrianglePeriod(f, rT, rHalf) {
+  const vTimes = [...new Set([0, fMod(rHalf, rT), fMod(-rHalf, rT), rT])].sort((x, y) => x - y);
+  const fAt = t => fIntRange(Math.ceil((t - rHalf) / rT), Math.floor((t + rHalf) / rT))
+    .reduce((sum, m) => sum + f(t - m * rT), 0);
+  const vValues = vTimes.map(t => fAt(t === rT ? 0 : t));
+  const rEnergy = vTimes.slice(1).reduce((sum, right, i) => {
+    const [lo, hi] = [vValues[i], vValues[i + 1]];
+    return sum + (right - vTimes[i]) * (lo ** 2 + lo * hi + hi ** 2) / 3;
+  }, 0);
+  const g = t => {
+    const rPhase = fMod(t, rT);
+    const j = vTimes.findIndex(x => x > rPhase);
+    const rFraction = (rPhase - vTimes[j - 1]) / (vTimes[j] - vTimes[j - 1]);
+    return vValues[j - 1] + rFraction * (vValues[j] - vValues[j - 1]);
+  };
+  return {g, rEnergy};
+}
+
+function fSignalProfile(rT, rDelta, W, sSignal) {
+  const rHalf = W / 2;
+  const rTimeToSample = W / rDelta;
+  if (sSignal === "sinc") {
+    const rCutoff = Math.PI / W;
+    const rEdge = fNearInteger(rT / (2 * W));
+    const rHarmonicEnergy = 2 * (Math.ceil(rEdge) - 1) + 1 + (Number.isInteger(rEdge) ? 0.5 : 0);
+    return {
+      f: t => fSincPi(t / W),
+      F: w => W * fBox(w, rCutoff),
+      g: t => (W / rT) * fBoxSeries(rEdge, rTau * (t / rT)),
+      A: omega => rTimeToSample * fBoxPeriod(omega, rTau, rCutoff * rDelta),
+      rFEnergy: W, rGEnergy: W ** 2 / rT * rHarmonicEnergy,
+      rAEnergy: rTimeToSample ** 2 * fBoxPeriodMeanSquare(1 / rTimeToSample),
+      iSampleRadius: Math.ceil(6 * rTimeToSample), rCutoff
+    };
+  }
+  if (sSignal === "gaussian") {
+    const rPeak = Math.sqrt(Math.PI) * W;
+    const rRoot2 = Math.SQRT2;
+    return {
+      f: t => Math.exp(-((t / W) ** 2)),
+      F: w => rPeak * Math.exp(-((w * rHalf) ** 2)),
+      g: t => fGaussPeriod(t, rT, W),
+      A: omega => rPeak / rDelta * fGaussPeriod(omega, rTau, 2 / rTimeToSample),
+      rFEnergy: W * Math.sqrt(Math.PI / 2),
+      rGEnergy: rPeak ** 2 / rT * fGaussPeriod(0, 1, rT / (Math.PI * W * rRoot2)),
+      rAEnergy: fGaussPeriod(0, 1, rTimeToSample / rRoot2),
+      iSampleRadius: Math.ceil(3 * rTimeToSample)
+    };
+  }
+  const rSampleRadius = fNearInteger(rHalf / rDelta);
+  const iSampleRadius = Math.floor(rSampleRadius);
+  if (sSignal === "triangle") {
+    const f = t => Math.max(0, 1 - fNearInteger(Math.abs(t) / rHalf));
+    const {g, rEnergy: rGEnergy} = fTrianglePeriod(f, rT, rHalf);
+    // A sampled triangle of noninteger radius interpolates two Fejér kernels.
+    const m = iSampleRadius;
+    const rMix = m > 0 ? (rSampleRadius - m) * (m + 1) / rSampleRadius : 0;
+    return {
+      f, F: w => rHalf * fSinc(w * W / 4) ** 2, g,
+      A: omega => m === 0 ? 1 : (1 - rMix) * fFejer(m, omega) + rMix * fFejer(m + 1, omega),
+      rFEnergy: W / 3, rGEnergy,
+      rAEnergy: 1 + 2 * fSquares(fIntRange(1, iSampleRadius).map(n => f(n * rDelta))),
+      iSampleRadius
+    };
+  }
+  const f = t => fBox(t, rHalf);
+  return {
+    f, F: w => W * fSinc(w * rHalf), g: t => fBoxPeriod(t, rT, rHalf),
+    A: omega => fBoxSeries(rSampleRadius, omega),
+    rFEnergy: W, rGEnergy: rT * fBoxPeriodMeanSquare(W / rT),
+    rAEnergy: 1 + 2 * fSquares(fIntRange(1, iSampleRadius).map(n => f(n * rDelta))),
+    iSampleRadius
+  };
+}
+
+function fModel(rT, rDelta, rPulseWidth, sSignal = "rectangle") {
+  const iN = Math.round(rT / rDelta);
+  const rHalf = rPulseWidth / 2;
+  const rOmega0 = rTau / rT;
+  const rBinAngle = rTau / iN;
+  const {f, F, g, A, rFEnergy, rGEnergy, rAEnergy, iSampleRadius, rCutoff} =
+    fSignalProfile(rT, rDelta, rPulseWidth, sSignal);
+  const a = n => f(n * rDelta);
+  const G = k => F(k * rOmega0) / rT;
+  // b[r] equals the periodic sum of a[n], computed via the other time-face path.
+  const vBTime = fIntRange(0, iN - 1).map(r => g(r * rDelta));
+  const b = r => vBTime[fMod(r, iN)];
+  // The DFT uses the folded sequence and the paper's unnormalized forward sum.
+  const vBFrequency = vBTime.map((_, k) => vBTime.reduce(
+    (asSum, rValue, r) => {
+      const rAngle = rBinAngle * fMod(k * r, iN);
+      asSum.re += rValue * Math.cos(rAngle);
+      asSum.im -= rValue * Math.sin(rAngle);
+      return asSum;
+    }, {re: 0, im: 0}
+  ));
+  const B = k => vBFrequency[fMod(k, iN)].re;
+  const rBEnergy = fSquares(vBTime);
+  const asEnergy = {
+    f: rFEnergy, F: rTau * rFEnergy, g: rGEnergy, G: rGEnergy / rT,
+    a: rAEnergy, A: rTau * rAEnergy, b: rBEnergy,
+    B: vBFrequency.reduce((rSum, value) => rSum + value.re ** 2 + value.im ** 2, 0)
+  };
+  const asWeight = {f: 1, F: 1 / rTau, g: 1 / rT, G: 1, a: 1, A: 1 / rTau, b: 1, B: 1 / iN};
+  return {
+    rT, rDelta, rPulseWidth, rHalf, iN, rOmega0, rBinAngle, iSampleRadius, rCutoff, sSignal,
+    asFunctions: {f, F, g, G, a, A, b, B}, asEnergy, asWeight, vBFrequency
+  };
+}
+
+function fTrace(sId, model, iResolution, iRangeLevel = 0) {
+  const {rT, rDelta, rPulseWidth: W, rHalf, iN, iSampleRadius, rCutoff, sSignal, asFunctions} = model;
+  const fValue = asFunctions[sId];
+  const bCompact = sSignal === "rectangle" || sSignal === "triangle";
+  const rSampleLimit = Math.max(4, iSampleRadius + 1) + 0.5;
+  const rTimeLimit = bCompact ? W : sSignal === "sinc" ? 6 * W : 3 * W;
+  const rFrequencyLimit = ({rectangle: 12 * Math.PI, triangle: 16 * Math.PI, sinc: 2 * Math.PI, gaussian: 8})[sSignal] / W;
+  const [rBaseMin, rBaseMax] = {
+    f: [-rTimeLimit, rTimeLimit], g: [-rT / 2, rT / 2], a: [-rSampleLimit, rSampleLimit],
+    F: [-rFrequencyLimit, rFrequencyLimit], G: [-32.5, 32.5], A: [-rTau, rTau],
+    b: [0, iN], B: [0, iN]
+  }[sId];
+  const rCenter = (rBaseMin + rBaseMax) / 2;
+  const rScale = rRangeFactor ** Math.min(iRangeLevel, fMaxRangeLevel(sId));
+  const rRadius = (rBaseMax - rBaseMin) * rScale / 2;
+  const rMin = rCenter - rRadius, rMax = rCenter + rRadius;
+  const fSegments = (vEdges, bLinear = false) => {
+    const vJumps = vEdges.filter(t => t >= rMin && t <= rMax);
+    const vBreaks = [rMin, ...vJumps.filter(t => t > rMin && t < rMax), rMax];
+    const vLines = vBreaks.slice(0, -1).map((rLeft, i) => {
+      const rRight = vBreaks[i + 1];
+      if (bLinear) return [[rLeft, fValue(rLeft)], [rRight, fValue(rRight)]];
+      const rValue = fValue((rLeft + rRight) / 2);
+      return [[rLeft, rValue], [rRight, rValue]];
+    });
+    return {rMin, rMax, vLines, vDots: bLinear ? [] : vJumps.map(x => [x, fValue(x)]), bDiscrete: false};
+  };
+  const fPeriodicKnots = (vEdges, rPeriod) => vEdges.flatMap(rEnd => {
+    const rPhase = fMod(rEnd, rPeriod);
+    const iFirst = Math.ceil(fNearInteger((rMin - rPhase) / rPeriod));
+    const iLast = Math.floor(fNearInteger((rMax - rPhase) / rPeriod));
+    return fIntRange(iFirst, iLast).map(m => rPhase + m * rPeriod);
+  }).sort((x, y) => x - y).filter((t, i, v) => i === 0 || Math.abs(t - v[i - 1]) > 16 * Number.EPSILON * rPeriod);
+  const bTriangle = sSignal === "triangle";
+  const vTimeKnots = bTriangle ? [-rHalf, 0, rHalf] : [-rHalf, rHalf];
+  if (sId === "f" && bCompact) return fSegments(vTimeKnots, bTriangle);
+  if (sId === "g" && bCompact) return fSegments(fPeriodicKnots(vTimeKnots, rT), bTriangle);
+  if (sId === "F" && sSignal === "sinc") return fSegments([-rCutoff, rCutoff]);
+  if (sId === "A" && sSignal === "sinc") return fSegments(fPeriodicKnots([-rCutoff * rDelta, rCutoff * rDelta], rTau));
+  if (["a", "b", "G", "B"].includes(sId)) {
+    const iFirst = Math.ceil(rMin);
+    const iLast = Math.min(Math.floor(rMax), sId === "b" || sId === "B" ? iN - 1 : Infinity);
+    // Plot a labeled subset on very wide views of the sampled signal.
+    const iStride = sId === "a" ? Math.max(1, Math.ceil((iLast - iFirst + 1) / 2048)) : 1;
+    const vIndices = fIntRange(Math.ceil(iFirst / iStride), Math.floor(iLast / iStride)).map(n => n * iStride);
+    return {rMin, rMax, vLines: [], vDots: vIndices.map(n => [n, fValue(n)]), bDiscrete: true, iStride};
+  }
+  const iBaseSteps = sId === "A" ? Math.max(iResolution, 8 * iSampleRadius) : iResolution;
+  // A multiple of four retains the center and the periodic DTFT peaks.
+  const iSteps = Math.min(12288, Math.ceil(Math.max(iResolution, iBaseSteps * rScale) / 4) * 4);
+  const vLine = Array.from({length: iSteps + 1}, (_, i) => {
+    const x = rCenter + rRadius * (2 * i / iSteps - 1);
+    return [x, fValue(x)];
+  });
+  return {rMin, rMax, vLines: [vLine], vDots: [], bDiscrete: false};
+}
+
+function fChart(trace, corner, box, bMini) {
+  const {rMin, rMax, vLines, vDots, bDiscrete, iStride = 1} = trace;
+  const {x, y, w, h} = box;
+  const yValues = vLines.flat().concat(vDots).map(point => point[1]);
+  let rLow = Math.min(0, ...yValues);
+  let rHigh = Math.max(0, ...yValues);
+  if (rLow === rHigh) rHigh = rLow + 1;
+  const rPad = (rHigh - rLow) * 0.09;
+  rLow -= rPad;
+  rHigh += rPad;
+  const fX = rValue => x + w * (rValue - rMin) / (rMax - rMin);
+  const fY = rValue => y + h * (rHigh - rValue) / (rHigh - rLow);
+  const rZero = fY(0);
+  const sColor = corner.time ? rTimeColor : rFreqColor;
+  const fCoords = pair => pair.map(value => value.toFixed(2)).join(",");
+  const sPaths = vLines.map(vLine => {
+    const sPath = vLine.map(([rX, rY], i) => (i ? "L" : "M") + fCoords([fX(rX), fY(rY)])).join(" ");
+    return "<path d='" + sPath + "' fill='none' stroke='" + sColor +
+      "' stroke-width='" + (bMini ? 1.55 : 2.15) + "' stroke-linejoin='round'/>";
+  }).join("");
+  // Suppress only dense dot glyphs; the stems still show every bin.
+  const sDots = vDots.map(([rX, rY]) => {
+    const rPx = fX(rX), rPy = fY(rY);
+    const sStem = bDiscrete ? "<line x1='" + rPx + "' x2='" + rPx + "' y1='" + rZero +
+      "' y2='" + rPy + "' stroke='" + sColor + "' stroke-width='" + (bMini ? 1 : 1.35) + "'/>" : "";
+    const sDot = (vDots.length <= (bMini ? 85 : 240) || !bDiscrete) ?
+      "<circle cx='" + rPx + "' cy='" + rPy + "' r='" + (bMini ? 1.65 : 2.8) + "' fill='" + sColor +
+      "'><title>" + fFormat(rX) + ", " + fFormat(rY) + "</title></circle>" : "";
+    return sStem + sDot;
+  }).join("");
+  const vXTicks = bDiscrete && Math.ceil(rMin) <= Math.floor(rMax)
+    ? [...new Set([Math.ceil(rMin), Math.round((rMin + rMax) / 2), Math.floor(rMax)])]
+    : [rMin, (rMin + rMax) / 2, rMax];
+  const vYTicks = [rLow + rPad, 0, rHigh - rPad].filter((rValue, i, v) => v.indexOf(rValue) === i);
+  const sXGrid = bMini ? "" : vXTicks.map(rValue =>
+    "<line class='gridline' x1='" + fX(rValue) + "' x2='" + fX(rValue) + "' y1='" + y + "' y2='" + (y + h) +
+    "'/><text class='plot-tick' x='" + fX(rValue) + "' y='" + (y + h + 17) + "' text-anchor='middle'>" +
+    fFormat(rValue, 4) + "</text>"
+  ).join("");
+  const sYGrid = bMini ? "" : vYTicks.map(rValue =>
+    "<line class='gridline' x1='" + x + "' x2='" + (x + w) + "' y1='" + fY(rValue) + "' y2='" + fY(rValue) +
+    "'/><text class='plot-tick' x='" + (x - 7) + "' y='" + (fY(rValue) + 4) + "' text-anchor='end'>" +
+    fFormat(rValue, 4) + "</text>"
+  ).join("");
+  const sAxisLabel = bMini ?
+    "<text class='plot-tick mini-tick' x='" + x + "' y='" + (y + h + 12) + "'>" + fFormat(rMin, 4) + "</text>" +
+    "<text class='plot-tick mini-tick' x='" + (x + w) + "' y='" + (y + h + 12) + "' text-anchor='end'>" + fFormat(rMax, 4) + "</text>" :
+    "<text class='plot-tick' x='" + (x + w / 2) + "' y='" + (y + h + 36) + "' text-anchor='middle'>" +
+      corner.axis + " · [" + fFormat(rMin, 4) + ", " + fFormat(rMax, 4) + "]" +
+      (iStride > 1 ? " · every " + iStride + " samples" : "") + "</text>";
+  const sEmpty = bDiscrete && vDots.length === 0 ?
+    "<text class='plot-tick' x='" + (x + w / 2) + "' y='" + (y + h / 2) +
+    "' text-anchor='middle'>No samples in range</text>" : "";
+  return sXGrid + sYGrid + "<line class='axis' x1='" + x + "' x2='" + (x + w) + "' y1='" + rZero +
+    "' y2='" + rZero + "'/>" + sPaths + sDots + sEmpty + sAxisLabel;
+}
+
+const asPositions = {
+  f: [126, 249], g: [653, 249], a: [126, 536], b: [653, 536],
+  F: [446, 75], G: [973, 75], A: [446, 362], B: [973, 362]
+};
+const iCardW = 176, iCardH = 104;
+function fRangeDisabled(sPlot, iStep) {
+  const sId = asCorner[sPlot] ? sPlot : fElement("plot-" + sPlot).value;
+  return iStep < 0 ? asRangeLevels[sPlot] <= -iRangeLimit :
+    asRangeLevels[sPlot] >= fMaxRangeLevel(sId);
+}
+
+function fRangeButtons(sPlot, sLabel) {
+  const fButton = (iStep, sSymbol, sAction) =>
+    "<button type='button' data-range-plot='" + sPlot + "' data-range-step='" + iStep +
+    "' title='" + sAction + " x-axis range by ∛2' aria-label='" + sAction + " x-axis range for " +
+    sLabel + "'" + (fRangeDisabled(sPlot, iStep) ? " disabled" : "") +
+    ">" + sSymbol + "</button>";
+  return "<div class='zoom-buttons' role='group' aria-label='X-axis range for " + sLabel + "'>" +
+    fButton(-1, "−", "Narrow") + fButton(1, "+", "Widen") + "</div>";
+}
+
+function fMiniChart(corner, model) {
+  const [rCX, rCY] = asPositions[corner.id];
+  const trace = fTrace(corner.id, model, 240, asRangeLevels[corner.id]);
+  const box = {x: rCX - iCardW / 2 + 10, y: rCY - iCardH / 2 + 36, w: iCardW - 20, h: iCardH - 54};
+  return "<g id='mini-chart-" + corner.id + "' data-x-min='" + trace.rMin +
+    "' data-x-max='" + trace.rMax + "' data-x-span='" + (trace.rMax - trace.rMin) +
+    "' role='img' aria-label='" + corner.label + ", " + corner.kind + "'>" +
+    fChart(trace, corner, box, true) + "</g>";
+}
+
+function fCube(model) {
+  const {rT, rDelta, iN, rOmega0, rBinAngle} = model;
+  const asColor = {time: rTimeColor, freq: rFreqColor, transform: rTransformColor};
+  const fRate = rStep => "step " + fFormat(rStep) + " · rate " + fFormat(1 / rStep);
+  const vEdges = [
+    ["f", "g", "peri-sum", "T = " + fFormat(rT), 281, 221, "time"],
+    ["f", "a", "sample", "Δ = " + fFormat(rDelta) + " · rate " + fFormat(1 / rDelta), 144, 390, "time"],
+    ["g", "b", "sample", "Δ = " + fFormat(rDelta) + " · rate " + fFormat(1 / rDelta), 670, 443, "time"],
+    ["a", "b", "peri-sum", "N = " + iN, 373, 510, "time"],
+    ["F", "G", "sample", "ω₀: " + fRate(rOmega0) + " · ×1/T", 709, 46, "freq"],
+    ["F", "A", "peri-sum", "2π/Δ = " + fFormat(rTau / rDelta) + " · ×1/Δ", 459, 175, "freq"],
+    ["G", "B", "peri-sum", "N = " + iN + " · ×N", 954, 214, "freq"],
+    ["A", "B", "sample", "Ω₀: " + fRate(rBinAngle), 777, 337, "freq"],
+    ["f", "F", "CTFT", "", 264, 149, "transform"],
+    ["g", "G", "FS", "", 792, 149, "transform"],
+    ["a", "A", "DTFT", "", 266, 432, "transform"],
+    ["b", "B", "DFT", "", 793, 432, "transform"]
+  ];
+  const vPaths = [], vLabels = [];
+  for (const [sFrom, sTo, sName, sDetail, rLabelX, rLabelY, sKind] of vEdges) {
+    const [rX1, rY1] = asPositions[sFrom], [rX2, rY2] = asPositions[sTo];
+    const rDX = rX2 - rX1, rDY = rY2 - rY1;
+    const rIntersect = Math.min((iCardW / 2 + 5) / Math.abs(rDX), (iCardH / 2 + 5) / Math.abs(rDY));
+    const bTwoWay = sKind === "transform";
+    vPaths.push("<path class='edge' data-edge='" + sFrom + "-" + sTo + "' d='M" +
+      (rX1 + rDX * rIntersect) + "," + (rY1 + rDY * rIntersect) + " L" +
+      (rX2 - rDX * rIntersect) + "," + (rY2 - rDY * rIntersect) + "' stroke='" + asColor[sKind] +
+      "' marker-end='url(#arrow-" + sKind + ")'" +
+      (bTwoWay ? " marker-start='url(#arrow-transform)'" : "") + "/>");
+    const sAnchor = ["f-a", "g-b", "F-A"].includes(sFrom + "-" + sTo) ? "start" : sFrom === "G" && sTo === "B" ? "end" : "middle";
+    vLabels.push("<text class='edge-text' x='" + rLabelX + "' y='" + rLabelY + "' fill='" + asColor[sKind] +
+      "' text-anchor='" + sAnchor + "'>" + sName + (sDetail ? "<tspan class='edge-detail' x='" + rLabelX +
+      "' dy='16'>" + sDetail + "</tspan>" : "") + "</text>");
+  }
+  const sMarkers = Object.entries(asColor).map(([sKind, sColor]) =>
+    "<marker id='arrow-" + sKind + "' viewBox='0 0 10 10' refX='9' refY='5' markerWidth='7' markerHeight='7' orient='auto-start-reverse'><path fill='" +
+    sColor + "' d='M0 1L10 5L0 9Z'/></marker>"
+  ).join("");
+  const sNodes = vCorners.map(corner => {
+    const [rCX, rCY] = asPositions[corner.id];
+    const x = rCX - iCardW / 2, y = rCY - iCardH / 2;
+    const sColor = corner.time ? rTimeColor : rFreqColor;
+    return "<g data-vertex='" + corner.id + "'><rect x='" + x + "' y='" + y + "' width='" + iCardW +
+      "' height='" + iCardH + "' rx='9' fill='white' stroke='" + (corner.time ? "#9fbfdb" : "#d9af99") +
+      "'/><text class='node-name' x='" + (x + 10) + "' y='" + (y + 24) + "' fill='" + sColor + "'>" +
+      corner.label + "</text>" + fMiniChart(corner, model) +
+      "<foreignObject class='mini-zoom' x='" + (x + iCardW - 63) + "' y='" + (y + 7) +
+      "' width='56' height='26'><div xmlns='http://www.w3.org/1999/xhtml'>" +
+      fRangeButtons(corner.id, corner.label) + "</div></foreignObject></g>";
+  }).join("");
+  return "<title id='cube-svg-title'>Cotner’s Fourier cube</title><desc id='cube-svg-desc'>Four time-domain signals and their four frequency-domain transforms, each with a plot. Double-headed arrows show transform pairs. Single-headed arrows show sampling and periodic sums.</desc><defs>" +
+    sMarkers + "</defs>" + vPaths.join("") + vLabels.join("") + sNodes;
+}
+
+function fRenderEnergy(model) {
+  fElement("energy-rows").innerHTML = vCorners.map(corner => {
+    const rEnergy = model.asEnergy[corner.id], rWeighted = rEnergy * model.asWeight[corner.id];
+    return "<tr data-energy='" + corner.id + "'><th scope='row' class='math'>" + corner.label +
+      "</th><td class='math'>" + corner.domain + "</td><td>" + fFormat(Math.sqrt(rEnergy), 7) +
+      "</td><td>" + fFormat(rEnergy, 7) + "</td><td>" + fFormat(rWeighted, 7) + "</td></tr>";
+  }).join("");
+}
+
+const asEdgeFormula = {
+  "f-g": ["Periodic sum", "eq:p-def"],
+  "f-a": ["Sampling", "eq:a-def"],
+  "g-b": ["Sampling", "eq:time-commute"],
+  "a-b": ["Periodic sum", "eq:b-def"],
+  "F-G": ["Scaled sampling", "eq:frequency-top"],
+  "F-A": ["Scaled periodic sum", "eq:frequency-left", true],
+  "G-B": ["Scaled periodic sum", "eq:frequency-right", true],
+  "A-B": ["Sampling", "eq:frequency-bottom"],
+  "f-F": ["Continuous-time Fourier transform", "eq:ctft"],
+  "g-G": ["Fourier series", "eq:fs"],
+  "a-A": ["Discrete-time Fourier transform", "eq:dtft"],
+  "b-B": ["Discrete Fourier transform", "eq:dft"]
+};
+
+function fComparisonEdge(sLeft, sRight) {
+  const sForward = sLeft + "-" + sRight;
+  const sBackward = sRight + "-" + sLeft;
+  if (Object.hasOwn(asEdgeFormula, sForward)) return sForward;
+  if (Object.hasOwn(asEdgeFormula, sBackward)) return sBackward;
+  return null;
+}
+
+function fRenderRelation() {
+  const sEdge = fComparisonEdge(fElement("plot-left").value, fElement("plot-right").value);
+  const panel = fElement("comparison-relation");
+  panel.hidden = !sEdge;
+  if (!sEdge) return;
+  const [sFrom, sTo] = sEdge.split("-");
+  const [sOperation, sEquation, bSymmetric] = asEdgeFormula[sEdge];
+  const sArrow = asCorner[sFrom].time === asCorner[sTo].time ? " → " : " ↔ ";
+  fElement("comparison-relation-title").textContent =
+    sOperation + " · " + asCorner[sFrom].label + sArrow + asCorner[sTo].label;
+  const equation = fElement(sEquation).querySelector("math");
+  fElement("comparison-relation-math").replaceChildren(equation.cloneNode(true));
+  const note = fElement("comparison-relation-note");
+  const bSincLimit = model.sSignal === "sinc" && ["f-F", "a-A", "f-g", "a-b"].includes(sEdge);
+  note.textContent = bSincLimit ? "For sinc, use symmetric limits for the forward integral or infinite sum shown here." :
+    "For the rectangular pulse, use symmetric limits for this sum.";
+  note.hidden = !(bSincLimit || (bSymmetric && model.sSignal === "rectangle"));
+}
+
+const vInputs = ["period", "delta", "rPulseWidth"].map(fElement);
+let model;
+function fRenderPlot(sSide) {
+  const sId = fElement("plot-" + sSide).value;
+  const corner = asCorner[sId];
+  const chart = fElement("chart-" + sSide);
+  asRangeLevels[sSide] = Math.min(asRangeLevels[sSide], fMaxRangeLevel(sId));
+  const trace = fTrace(sId, model, 600, asRangeLevels[sSide]);
+  chart.setAttribute("aria-label", corner.label + ", " + corner.kind);
+  chart.dataset.vertex = sId;
+  chart.dataset.xMin = trace.rMin;
+  chart.dataset.xMax = trace.rMax;
+  chart.dataset.xSpan = trace.rMax - trace.rMin;
+  chart.innerHTML = "<title>" + corner.label + " · " + corner.kind + "</title>" +
+    fChart(trace, corner, {x: 53, y: 11, w: 440, h: 204}, false);
+  for (const button of fElement("zoom-" + sSide).querySelectorAll("button")) {
+    button.disabled = fRangeDisabled(sSide, Number(button.dataset.rangeStep));
+  }
+}
+function fUpdate() {
+  const [rT, rDelta, rPulseWidth] = vInputs.map(input => input.valueAsNumber);
+  const rN = fNearInteger(rT / rDelta);
+  let sMessage = "";
+  let vInvalid = vInputs.filter(input =>
+    !Number.isFinite(input.valueAsNumber) || input.valueAsNumber < 1e-6 || input.valueAsNumber > 1e6);
+  if (vInvalid.length) sMessage = "Enter values from 0.000001 to 1,000,000.";
+  else if (!Number.isInteger(rN) || rN < 1 || rN > 512) {
+    sMessage = "T/Δ must be an integer from 1 to 512.";
+    vInvalid = vInputs.slice(0, 2);
+  } else if (rPulseWidth / rDelta > 8193) {
+    sMessage = "Reduce the width or increase Δ so W/Δ is at most 8,193.";
+    vInvalid = vInputs.slice(1);
+  }
+  for (const input of vInputs) input.setAttribute("aria-invalid", String(vInvalid.includes(input)));
+  const error = fElement("parameter-error");
+  error.hidden = !sMessage;
+  error.textContent = sMessage ? sMessage + " Showing the last valid settings." : "";
+  if (sMessage) return;
+  model = fModel(rT, rDelta, rPulseWidth, fElement("signal-type").value);
+  fElement("signal-formula").textContent = asSignalFormulas[model.sSignal];
+  fElement("parameter-status").textContent = "N = " + model.iN + " samples per period";
+  fElement("cube").innerHTML = fCube(model);
+  fRenderPlot("left");
+  fRenderPlot("right");
+  fRenderEnergy(model);
+  fRenderRelation();
+}
+
+for (const [sSide, sDefault] of [["left", "f"], ["right", "F"]]) {
+  const select = fElement("plot-" + sSide);
+  for (const corner of vCorners) select.add(new Option(corner.label + " · " + corner.kind, corner.id));
+  select.value = sDefault;
+  fElement("zoom-" + sSide).innerHTML = fRangeButtons(sSide, sSide + " plot");
+  select.addEventListener("change", () => {
+    fRenderPlot(sSide);
+    fRenderRelation();
+  });
+}
+fElement("cube-panel").addEventListener("click", event => {
+  const button = event.target.closest("button[data-range-step]");
+  if (!button || !model) return;
+  const {rangePlot: sPlot, rangeStep: sStep} = button.dataset;
+  if (fRangeDisabled(sPlot, Number(sStep))) return;
+  asRangeLevels[sPlot] += Number(sStep);
+  if (asCorner[sPlot]) {
+    fElement("mini-chart-" + sPlot).outerHTML = fMiniChart(asCorner[sPlot], model);
+  } else {
+    fRenderPlot(sPlot);
+  }
+  for (const item of button.parentElement.querySelectorAll("button")) {
+    item.disabled = fRangeDisabled(sPlot, Number(item.dataset.rangeStep));
+  }
+});
+const vTabs = ["cube-tab", "reference-tab"].map(fElement);
+function fSelectTab(tab) {
+  for (const item of vTabs) {
+    const bSelected = item === tab;
+    item.setAttribute("aria-selected", String(bSelected));
+    item.tabIndex = bSelected ? 0 : -1;
+    fElement(item.getAttribute("aria-controls")).hidden = !bSelected;
+  }
+}
+for (const tab of vTabs) {
+  tab.addEventListener("click", () => fSelectTab(tab));
+  tab.addEventListener("keydown", event => {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const next = event.key === "Home" ? vTabs[0] : event.key === "End" ? vTabs[1] : vTabs.find(item => item !== tab);
+    fSelectTab(next);
+    next.focus();
+  });
+}
+fElement("parameters").addEventListener("submit", event => event.preventDefault());
+for (const input of vInputs) input.addEventListener("input", fUpdate);
+fElement("signal-type").addEventListener("change", fUpdate);
+fUpdate();
+</script>
+</body>
+</html>
